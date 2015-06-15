@@ -17,7 +17,39 @@ APP.TableHeader = function() {
 
 // Excel table component
 APP.Table = function() {
+
+    this.handleContextMenu = function() {
+        var table = this;
+        APP.addEvent(APP.contextMenu, "click", function(e) {
+            if (e.target.textContent == "cut") {
+                APP.bufferText = APP.selectedInput.value;
+                APP.selectedInput.value = '';
+            } else if (e.target.textContent == "copy") {
+                APP.bufferText = APP.selectedInput.value;
+            } else if (e.target.textContent == "paste") {
+                APP.selectedInput.value = APP.bufferText;
+            } else if (e.target.textContent == "Add Row") {
+                var tr = document.createElement("tr"),
+                    td, input;
+                for (var i = 0; i < table.columns; i++) {
+                    td = document.createElement("td");
+                    input = document.createElement("input");
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                }
+                APP.selectedInput.parentElement.parentElement.parentElement.insertBefore(
+                    tr, APP.selectedInput.parentElement.parentElement
+                );
+            } else if (e.target.textContent == "Remove Row") {
+                APP.selectedInput.parentElement.parentElement.parentElement.removeChild(APP.selectedInput.parentElement.parentElement);
+            }
+        });
+    };
+
     this.render = function(target, rows, columns) {
+        this.rows = rows;
+        this.columns = columns;
+
         var tr, td, input;
 
         var header = new APP.TableHeader();
@@ -33,6 +65,9 @@ APP.Table = function() {
             }
             target.appendChild(tr);
         }
+
+        // context menu selection
+        this.handleContextMenu();
     };
 };
 
@@ -49,9 +84,11 @@ APP.addEvent = function(elem, event, fn, isCapture) {
     if (elem.addEventListener) {
         elem.addEventListener(event, fn, isCapture);
     } else {
-        elem.attachEvent("on" + event, function() {
-            // set the this pointer same as addEventListener when fn is called
-            return (fn.call(elem, window.event));
+        elem.attachEvent("on" + event, function(e) {
+            e = window.event;
+            e.target = e.srcElement;
+            e.target.textContent ? e.target.textContent : (e.target.textContent = e.target.innerText);
+            return (fn.call(elem, e));
         });
     }
 };
@@ -73,14 +110,14 @@ APP.onDocumentLoad = function(rows, columns) {
 
     APP.drawExcelSheet(rows, columns);
 
-    var inputs = [].slice.call(document.querySelectorAll("input"));
+    var inputs = document.getElementsByTagName("input");
 
     APP.addEvent(document, "click", function(e) {
         APP.contextMenu.style.display = 'none';
     });
 
     APP.addEvent(document, "contextmenu", function(e) {
-        e.preventDefault();
+        event.preventDefault ? event.preventDefault() : event.returnValue = false;
         // check input
         if (e.target && e.target.type === 'text') {
             APP.contextMenu.style.top = (e.clientY) + "px";
@@ -89,25 +126,16 @@ APP.onDocumentLoad = function(rows, columns) {
         }
     });
 
-    APP.addEvent(APP.contextMenu, "click", function(e) {
-        if (e.target.textContent == "cut") {
-            APP.bufferText = APP.selectedInput.value;
-            APP.selectedInput.value = '';
-            localStorage[APP.selectedInput.id] = '';
-        } else if (e.target.textContent == "copy") {
-            APP.bufferText = APP.selectedInput.value;
-        } else if (e.target.textContent == "paste") {
-            localStorage[APP.selectedInput.id] = APP.selectedInput.value = APP.bufferText;
-        }
-    });
 
-    inputs.forEach(function(elem) {
+    for (var i = 0; i < inputs.length; i++) {
+        var elem = inputs[i];
+
         APP.addEvent(elem, "focus", function(e) {
             APP.selectedInput = e.target;
         });
 
         APP.addEvent(elem, "blur", function(e) {});
-    });
+    };
 
 };
 
