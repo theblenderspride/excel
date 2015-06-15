@@ -21,6 +21,7 @@ APP.Table = function() {
     this.handleContextMenu = function() {
         var table = this;
         APP.addEvent(APP.contextMenu, "click", function(e) {
+            e.target.textContent = e.target.textContent.trim();
             if (e.target.textContent == "cut") {
                 APP.bufferText = APP.selectedInput.value;
                 APP.selectedInput.value = '';
@@ -72,6 +73,13 @@ APP.Table = function() {
 };
 
 APP.init = function() {
+
+    if (typeof String.prototype.trim !== 'function') {
+        String.prototype.trim = function() {
+            return this.replace(/^\s+|\s+$/g, '');
+        }
+    }
+
     APP.contextMenu = document.getElementById('contextMenu');
     APP.bufferText = '';
     APP.selectedInput = null;
@@ -87,7 +95,9 @@ APP.addEvent = function(elem, event, fn, isCapture) {
         elem.attachEvent("on" + event, function(e) {
             e = window.event;
             e.target = e.srcElement;
-            e.target.textContent ? e.target.textContent : (e.target.textContent = e.target.innerText);
+            if (e.target) {
+                e.target.textContent ? e.target.textContent : (e.target.value ? e.target.textContent = e.target.value : e.target.textContent = e.target.innerText);
+            }
             return (fn.call(elem, e));
         });
     }
