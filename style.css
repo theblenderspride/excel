@@ -1,0 +1,56 @@
+input {
+    border: none;
+    width: 80px;
+    font-size: 14px;
+    padding: 2px;
+}
+
+input:hover {
+    background-color: #eee;
+}
+
+input:focus {
+    background-color: #ccf;
+}
+
+input:not(:focus) {
+    text-align: right;
+}
+
+table {
+    border-collapse: collapse;  
+}
+
+td {
+    border: 1px solid #999;
+}
+
+tr:first-child td, td:first-child {
+    background-color: #ccc;
+    padding: 1px 3px;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+}
+
+footer {
+    font-size: 80%;
+}
+
+#contextMenu {
+   display: none;
+   position: absolute;
+   background: #FDFDFD;
+   margin: 0;
+   padding: 0;
+   list-style: none;
+}
+
+#contextMenu li {
+    padding: 7px 20px;
+}
+
+#contextMenu li:hover {
+    background: blue;
+    color: white;
+}
