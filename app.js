@@ -3,7 +3,7 @@ var APP = {};
 
 APP.TABKEY = 9;
 
-// Global helpers
+// IE helper for trim
 if (typeof String.prototype.trim !== 'function') {
     String.prototype.trim = function() {
         return this.replace(/^\s+|\s+$/g, '');
@@ -84,7 +84,6 @@ APP.TableHeader = function() {
         }
 
         this.addEvents();
-
         target.appendChild(tr);
     };
 };
@@ -154,38 +153,25 @@ APP.Table = function() {
 
     var blurHandler = function(e) {
         var indices = APP.selectedInput.parentElement.id.split(".")
-
-        // store the entered value in to the data element
+            // store the entered value in to the data element
         APP.data[indices[0]][indices[1]] = APP.selectedInput.value;
     };
 
     this.addInputEvents = function() {
         var inputs = document.getElementsByTagName("input");
-
         for (var i = 0; i < inputs.length; i++) {
-            var elem = inputs[i];
-
-            // store the currently working input element
-            APP.addEvent(elem, "focus", focusHandler);
-
-            APP.addEvent(elem, "keydown", keydownHandler);
-
-            APP.addEvent(elem, "blur", blurHandler);
+            APP.addEvent(inputs[i], "focus", focusHandler);
+            APP.addEvent(inputs[i], "keydown", keydownHandler);
+            APP.addEvent(inputs[i], "blur", blurHandler);
         }
     };
 
     this.removeInputEvents = function() {
         var inputs = document.getElementsByTagName("input");
-
         for (var i = 0; i < inputs.length; i++) {
-            var elem = inputs[i];
-
-            // store the currently working input element
-            APP.removeEvent(elem, "focus", focusHandler);
-
-            APP.removeEvent(elem, "keydown", keydownHandler);
-
-            APP.removeEvent(elem, "blur", blurHandler);
+            APP.removeEvent(inputs[i], "focus", focusHandler);
+            APP.removeEvent(inputs[i], "keydown", keydownHandler);
+            APP.removeEvent(inputs[i], "blur", blurHandler);
         }
     };
 
@@ -222,8 +208,6 @@ APP.Table = function() {
             }
             this.target.appendChild(tr);
         }
-
-
 
         // handle input events
         this.addInputEvents();
