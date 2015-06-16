@@ -1,6 +1,6 @@
 input {
     border: none;
-    width: 80px;
+    width: 100%;
     font-size: 14px;
     padding: 2px;
 }
@@ -26,11 +26,19 @@ td {
 }
 
 th {
-    background-color: #ccc;
     padding: 1px 3px;
     font-weight: bold;
     text-align: center;
     cursor: pointer;
+    display: table-cell !important;
+}
+
+th.asc {
+   
+}
+
+th.desc {
+   
 }
 
 footer {

@@ -10,27 +10,67 @@ if (typeof String.prototype.trim !== 'function') {
     }
 }
 
+APP.addEvent = function(obj, type, fn, isCapture) {
+    // if not specified use false by default
+    if (typeof isCapture === "undefined") {
+        isCapture = false;
+    }
+    // Modern browser code
+    if (obj.addEventListener) {
+        obj.addEventListener(type, fn, isCapture);
+    } else {
+        obj['e' + type + fn] = fn;
+        obj[type + fn] = function() {
+            // IE specific code
+            // IE8+ supports textContent and innerText
+            // for IE7 use value of the input
+            var e = window.event;
+            e.target = e.srcElement;
+            if (e.target) {
+                e.target.textContent ? e.target.textContent : (e.target.value ? e.target.textContent = e.target.value : e.target.textContent = e.target.innerText);
+            }
+            obj['e' + type + fn](e);
+        }
+        obj.attachEvent('on' + type, obj[type + fn]);
+    }
+};
+
+APP.removeEvent = function(obj, type, fn, isCapture) {
+    if (obj.addEventListener) {
+        obj.removeEventListener(type, fn, isCapture);
+    } else {
+        obj.detachEvent('on' + type, obj[type + fn]);
+        obj[type + fn] = null;
+    }
+};
+
 // Excel table header component
 APP.TableHeader = function() {
-    var th, tr;
+    var th, tr, prevSelectedTr;
 
     this.addEvents = function() {
         APP.addEvent(tr, "click", function(e) {
-            console.log(e.target.id, e.target.textContent);
-
+            var sortOrder;
             // first time no class is added
             if (e.target.className == '') {
-                e.target.className = 'asc';
+                sortOrder = 'asc';
+                e.target.className = 'asc glyphicon glyphicon-arrow-up';
             }
             // already sorted by ascending order
-            else if (e.target.className == 'asc') {
-                e.target.className = 'desc';
+            else if (e.target.className.indexOf('asc') != -1) {
+                sortOrder = 'desc';
+                e.target.className = 'desc glyphicon glyphicon-arrow-down';
             }
             // already sorted by descending order
-            else if (e.target.className == 'desc') {
-                e.target.className = 'asc';
+            else if (e.target.className.indexOf('desc') != -1) {
+                sortOrder = 'asc';
+                e.target.className = 'asc glyphicon glyphicon-arrow-up';
             }
-            APP.sortColumn(e.target.id, e.target.className);
+            if (prevSelectedTr && prevSelectedTr != e.target) {
+                prevSelectedTr.className = '';
+            }
+            prevSelectedTr = e.target;
+            APP.sortColumn(e.target.id, sortOrder);
         });
     };
 
@@ -89,6 +129,7 @@ APP.Table = function() {
     // context menu selection
     this.handleContextMenu();
 
+    // will get the data from this
     APP.data = [];
 
     this.setInitialData = function(rows, columns) {
@@ -100,30 +141,51 @@ APP.Table = function() {
         }
     };
 
-    this.handleInputEvents = function() {
+    var focusHandler = function(e) {
+        APP.selectedInput = e.target;
+    };
+
+    var keydownHandler = function(e) {
+        if (e.keyCode == APP.TABKEY) {
+            // when tabbed out close the context menu
+            APP.contextMenu.style.display = 'none';
+        };
+    };
+
+    var blurHandler = function(e) {
+        var indices = APP.selectedInput.parentElement.id.split(".")
+
+        // store the entered value in to the data element
+        APP.data[indices[0]][indices[1]] = APP.selectedInput.value;
+    };
+
+    this.addInputEvents = function() {
         var inputs = document.getElementsByTagName("input");
 
         for (var i = 0; i < inputs.length; i++) {
             var elem = inputs[i];
 
             // store the currently working input element
-            APP.addEvent(elem, "focus", function(e) {
-                APP.selectedInput = e.target;
-            });
+            APP.addEvent(elem, "focus", focusHandler);
 
-            APP.addEvent(elem, "keydown", function(e) {
-                if (e.keyCode == APP.TABKEY) {
-                    // when tabbed out close the context menu
-                    APP.contextMenu.style.display = 'none';
-                };
-            });
+            APP.addEvent(elem, "keydown", keydownHandler);
 
-            APP.addEvent(elem, "blur", function(e) {
-                var indices = APP.selectedInput.parentElement.id.split(".")
+            APP.addEvent(elem, "blur", blurHandler);
+        }
+    };
 
-                // store the entered value in to the data element
-                APP.data[indices[0]][indices[1]] = APP.selectedInput.value;
-            });
+    this.removeInputEvents = function() {
+        var inputs = document.getElementsByTagName("input");
+
+        for (var i = 0; i < inputs.length; i++) {
+            var elem = inputs[i];
+
+            // store the currently working input element
+            APP.removeEvent(elem, "focus", focusHandler);
+
+            APP.removeEvent(elem, "keydown", keydownHandler);
+
+            APP.removeEvent(elem, "blur", blurHandler);
         }
     };
 
@@ -164,12 +226,10 @@ APP.Table = function() {
 
 
         // handle input events
-        this.handleInputEvents();
+        this.addInputEvents();
     };
 
     APP.sortColumn = function(colIndex, sortOrder) {
-        console.log(arguments);
-
         APP.data.sort(sortFunction);
 
         function sortFunction(a, b) {
@@ -183,7 +243,9 @@ APP.Table = function() {
             }
         }
 
-        console.log(APP.data);
+        // remove the events
+        table.removeInputEvents();
+        // render the table
         table.render();
     };
 };
@@ -194,36 +256,7 @@ APP.init = function() {
     APP.selectedInput = null;
 };
 
-APP.addEvent = function(elem, event, fn, isCapture) {
-    // if not specified use false by default
-    if (typeof isCapture === "undefined") {
-        isCapture = false;
-    }
-    // Modern browser code
-    if (elem.addEventListener) {
-        elem.addEventListener(event, fn, isCapture);
-    } else {
-        elem.attachEvent("on" + event, function(e) {
-            // IE specific code
-            // IE8+ supports textContent and innerText
-            // for IE7 use value of the input
-            e = window.event;
-            e.target = e.srcElement;
-            if (e.target) {
-                e.target.textContent ? e.target.textContent : (e.target.value ? e.target.textContent = e.target.value : e.target.textContent = e.target.innerText);
-            }
-            return (fn.call(elem, e));
-        });
-    }
-};
 
-APP.removeEvent = function(element, event, isCapture) {
-    if (elem.addEventListener) {
-        elem.removeEventListener(event, fn, isCapture);
-    } else {
-        elem.detachEvent("on" + event, fn);
-    }
-};
 
 APP.drawExcelSheet = function(rows, columns) {
     var table = new APP.Table();
